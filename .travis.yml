@@ -1,0 +1,4 @@
+language: rust
+sudo: 9000
+rust:
+  - nightly
