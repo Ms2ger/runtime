@@ -12,13 +12,39 @@ extern crate clippy;
 extern crate js;
 extern crate rustc;
 
+mod error;
+
+use error::Error;
 use rustc::plugin::Registry;
+use std::env;
+use std::ffi::OsString;
+use std::process;
 
 #[plugin_registrar]
 pub fn plugin_registrar(registry: &mut Registry) {
     clippy::plugin_registrar(registry);
 }
 
+fn do_main(path: Option<OsString>) -> Result<(), Error> {
+    let _path = try!(path.ok_or(Error::MissingArgument));
+    Ok(())
+}
+
 fn main() {
-    println!("Hello, world!");
+    match do_main(env::args_os().nth(1)) {
+        Ok(()) => println!("Hello, world!"),
+        Err(error) => {
+            println!("Finished unsuccessfully: {}.", error);
+            process::exit(1);
+        }
+    }
+}
+
+#[test]
+fn missing_argument() {
+    match do_main(None) {
+        Err(Error::MissingArgument) => (),
+        Err(error) => panic!("Unexpected error: {}", error),
+        Ok(()) => panic!("Unexpected ok"),
+    }
 }
