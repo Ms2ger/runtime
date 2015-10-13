@@ -13,11 +13,13 @@ extern crate js;
 extern crate rustc;
 
 mod error;
+mod script;
 
 use error::Error;
 use rustc::plugin::Registry;
 use std::env;
 use std::ffi::OsString;
+use std::path::Path;
 use std::process;
 
 #[plugin_registrar]
@@ -26,8 +28,8 @@ pub fn plugin_registrar(registry: &mut Registry) {
 }
 
 fn do_main(path: Option<OsString>) -> Result<(), Error> {
-    let _path = try!(path.ok_or(Error::MissingArgument));
-    Ok(())
+    let path = try!(path.ok_or(Error::MissingArgument));
+    script::run_script(Path::new(&path))
 }
 
 fn main() {
