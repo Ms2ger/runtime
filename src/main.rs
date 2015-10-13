@@ -10,6 +10,7 @@
 
 extern crate clippy;
 extern crate js;
+extern crate libc;
 extern crate rustc;
 
 mod error;

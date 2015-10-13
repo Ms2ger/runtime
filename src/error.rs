@@ -7,6 +7,7 @@ use std::io;
 use std::string::FromUtf8Error;
 
 pub enum Error {
+    Error,
     InvalidString(FromUtf8Error),
     IO(io::Error),
     MissingArgument,
@@ -15,6 +16,9 @@ pub enum Error {
 impl Display for Error {
     fn fmt(&self, formatter: &mut Formatter) -> Result<(), fmt::Error> {
         match *self {
+            Error::Error => {
+                write!(formatter, "an unspecified error occurred")
+            }
             Error::InvalidString(ref error) => {
                 write!(formatter,
                        "an error occurred decoding a string ({:?})",
@@ -27,6 +31,12 @@ impl Display for Error {
                 write!(formatter, "a required argument was omitted")
             }
         }
+    }
+}
+
+impl From<()> for Error {
+    fn from(_: ()) -> Error {
+        Error::Error
     }
 }
 

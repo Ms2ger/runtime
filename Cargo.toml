@@ -10,3 +10,6 @@ git = "https://github.com/Manishearth/rust-clippy"
 [dependencies.js]
 git = "https://github.com/servo/rust-mozjs"
 features = ["debugmozjs"]
+
+[dependencies]
+libc = "*"
