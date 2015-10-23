@@ -2,3 +2,6 @@ language: rust
 sudo: 9000
 rust:
   - nightly
+script:
+  - cargo build --verbose
+  - ./test.sh
