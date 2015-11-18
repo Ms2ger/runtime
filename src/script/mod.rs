@@ -2,14 +2,13 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+mod console;
+mod global;
+mod reflect;
+
 use error::Error;
-use js::jsapi::{JS_Init, OnNewGlobalHookOption, CompartmentOptions};
-use js::jsapi::{JSAutoRequest, JS_NewGlobalObject, Rooted};
-use js::jsapi::{JS_GlobalObjectTraceHook, JSClass};
-use js::{JSCLASS_IS_GLOBAL, JSCLASS_RESERVED_SLOTS_MASK};
-use js::{JSCLASS_RESERVED_SLOTS_SHIFT, JSCLASS_GLOBAL_SLOT_COUNT};
+use js::jsapi::{JS_Init, JSAutoRequest, Rooted};
 use js::rust::Runtime;
-use libc::c_char;
 use std::fs::File;
 use std::io::Read;
 use std::path::Path;
@@ -26,26 +25,6 @@ fn load_script(path: &Path) -> Result<String, Error> {
     Ok(script)
 }
 
-static CLASS: JSClass = JSClass {
-    name: b"Global\0" as *const u8 as *const c_char,
-    flags: JSCLASS_IS_GLOBAL |
-           ((JSCLASS_GLOBAL_SLOT_COUNT & JSCLASS_RESERVED_SLOTS_MASK) <<
-            JSCLASS_RESERVED_SLOTS_SHIFT),
-    addProperty: None,
-    delProperty: None,
-    getProperty: None,
-    setProperty: None,
-    enumerate: None,
-    resolve: None,
-    convert: None,
-    finalize: None,
-    call: None,
-    hasInstance: None,
-    construct: None,
-    trace: Some(JS_GlobalObjectTraceHook),
-    reserved: [0 as *mut _; 25],
-};
-
 pub fn run_script(path: &Path) -> Result<(), Error> {
     let script = try!(load_script(path));
     INIT.call_once(|| {
@@ -53,17 +32,13 @@ pub fn run_script(path: &Path) -> Result<(), Error> {
             assert!(JS_Init());
         }
     });
+
     let runtime = Runtime::new();
     let _ar = JSAutoRequest::new(runtime.cx());
-    let options = CompartmentOptions::default();
-    let global = unsafe {
-        JS_NewGlobalObject(runtime.cx(),
-                           &CLASS,
-                           ptr::null_mut(),
-                           OnNewGlobalHookOption::FireOnNewGlobalHook,
-                           &options)
-    };
-    let global = Rooted::new(runtime.cx(), global);
+    let mut global = Rooted::new(runtime.cx(), ptr::null_mut());
+    unsafe { global::create(runtime.cx(), global.handle_mut()) };
+    assert!(!global.ptr.is_null());
+
     let path_string = path.to_string_lossy().into_owned();
     try!(runtime.evaluate_script(global.handle(), script, path_string, 0));
     Ok(())
