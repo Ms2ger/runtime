@@ -9,6 +9,7 @@
 #![plugin(clippy)]
 
 extern crate clippy;
+extern crate env_logger;
 extern crate js;
 extern crate libc;
 extern crate rustc;
@@ -34,6 +35,7 @@ fn do_main(path: Option<OsString>) -> Result<(), Error> {
 }
 
 fn main() {
+    env_logger::init().unwrap();
     match do_main(env::args_os().nth(1)) {
         Ok(()) => println!("Hello, world!"),
         Err(error) => {

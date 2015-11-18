@@ -13,3 +13,4 @@ features = ["debugmozjs"]
 
 [dependencies]
 libc = "0.1"
+env_logger = "0.3"
