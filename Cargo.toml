@@ -12,4 +12,4 @@ git = "https://github.com/servo/rust-mozjs"
 features = ["debugmozjs"]
 
 [dependencies]
-libc = "*"
+libc = "0.1"
