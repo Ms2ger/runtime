@@ -30,7 +30,7 @@ use js::JSPROP_SHARED;
 use js::jsval::ObjectValue;
 use libc::c_char;
 use script::console;
-use script::reflect::{Reflectable, finalize};
+use script::reflect::{Reflectable, PrototypeID, finalize, initialize_global};
 use std::ptr;
 
 pub struct Global(usize);
@@ -38,7 +38,7 @@ pub struct Global(usize);
 static CLASS: JSClass = JSClass {
     name: b"Global\0" as *const u8 as *const c_char,
     flags: JSCLASS_IS_GLOBAL |
-           ((JSCLASS_GLOBAL_SLOT_COUNT & JSCLASS_RESERVED_SLOTS_MASK) <<
+           (((JSCLASS_GLOBAL_SLOT_COUNT + 1) & JSCLASS_RESERVED_SLOTS_MASK) <<
             JSCLASS_RESERVED_SLOTS_SHIFT),
     addProperty: None,
     delProperty: None,
@@ -100,6 +100,10 @@ impl Reflectable for Global {
     fn attributes() -> Option<&'static [JSPropertySpec]> {
         Some(ATTRIBUTES)
     }
+
+    fn prototype_index() -> PrototypeID {
+        PrototypeID::Global
+    }
 }
 
 unsafe fn get_console(cx: *mut JSContext, args: &CallArgs) -> Result<(), ()> {
@@ -118,6 +122,7 @@ unsafe extern "C" fn get_console_native(cx: *mut JSContext, argc: u32, vp: *mut 
     let args = CallArgs::from_vp(vp, argc);
     get_console(cx, &args).is_ok()
 }
+
 
 /// Create a DOM global object with the given class.
 pub fn create_dom_global(cx: *mut JSContext,
@@ -141,7 +146,7 @@ pub fn create_dom_global(cx: *mut JSContext,
         let _ac = JSAutoCompartment::new(cx, obj.ptr);
         global.init(obj.ptr);
         JS_InitStandardClasses(cx, obj.handle());
-        // initialize_global(obj.ptr);
+        initialize_global(obj.ptr);
         JS_FireOnNewGlobalObject(cx, obj.handle());
         obj.ptr
     }

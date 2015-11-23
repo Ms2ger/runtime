@@ -18,9 +18,12 @@ use js::jsapi::JSPropertySpec;
 use js::jsapi::JS_SetReservedSlot;
 use js::jsapi::MutableHandleObject;
 use js::jsapi::RootedObject;
+use js::JSCLASS_GLOBAL_SLOT_COUNT;
 use js::jsval::PrivateValue;
 use js::rust::define_methods;
 use js::rust::define_properties;
+use js::rust::GCMethods;
+use libc::c_void;
 
 const DOM_OBJECT_SLOT: u32 = 0;
 
@@ -92,16 +95,57 @@ pub trait Reflectable: Sized {
         }
     }
 
+    fn prototype_index() -> PrototypeID;
+
     unsafe fn get_prototype_object(cx: *mut JSContext,
                                    global: HandleObject,
                                    rval: MutableHandleObject) {
-        // TODO: cache
+        let prototypes = get_prototypes(global.get());
+        let cache: *mut *mut JSObject = &mut (*prototypes)[Self::prototype_index() as usize];
+        if !(*cache).is_null() {
+            rval.set(*cache);
+            return;
+        }
+
         Self::create_interface_prototype_object(cx, global, rval);
         assert!(!rval.get().is_null());
+
+        *cache = rval.get();
+        if <*mut JSObject>::needs_post_barrier(*cache) {
+            <*mut JSObject>::post_barrier(cache)
+        }
     }
 }
 
 pub unsafe extern "C" fn finalize<T: Reflectable>(_fop: *mut JSFreeOp, object: *mut JSObject) {
     let this = T::from_reflector(object);
     let _ = Box::from_raw(this as *mut T);
+}
+
+unsafe fn get_prototypes(global: *mut JSObject) -> *mut [*mut JSObject; PrototypeID::Count as usize] {
+    JS_GetReservedSlot(global, DOM_PROTOTYPE_SLOT).to_private() as *mut ProtoOrIfaceArray
+}
+
+#[derive(PartialEq, Copy, Clone)]
+#[repr(u16)]
+pub enum PrototypeID {
+    Console = 0,
+    Global,
+    Count = 2
+}
+
+/// An array of `*mut JSObject` of size `PrototypeID::Count`.
+pub type ProtoOrIfaceArray = [*mut JSObject; PrototypeID::Count as usize];
+
+pub const DOM_PROTOTYPE_SLOT: u32 = JSCLASS_GLOBAL_SLOT_COUNT;
+
+
+/// Construct and cache the ProtoOrIfaceArray for the given global.
+pub unsafe fn initialize_global(global: *mut JSObject) {
+    let proto_array: Box<ProtoOrIfaceArray> =
+        Box::new([0 as *mut JSObject; 2]);
+    let box_ = Box::into_raw(proto_array);
+    JS_SetReservedSlot(global,
+                       DOM_PROTOTYPE_SLOT,
+                       PrivateValue(box_ as *const c_void));
 }

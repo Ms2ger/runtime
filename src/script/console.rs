@@ -22,7 +22,7 @@ use js::JSCLASS_RESERVED_SLOTS_MASK;
 use js::JSCLASS_RESERVED_SLOTS_SHIFT;
 use js::JSPROP_ENUMERATE;
 use libc::c_char;
-use script::reflect::{Reflectable, finalize};
+use script::reflect::{Reflectable, PrototypeID, finalize};
 use std::cell::Ref;
 use std::cell::RefCell;
 use std::ptr;
@@ -130,6 +130,10 @@ impl Reflectable for Console {
 
     fn methods() -> Option<&'static [JSFunctionSpec]> {
         Some(METHODS)
+    }
+
+    fn prototype_index() -> PrototypeID {
+        PrototypeID::Console
     }
 }
 
