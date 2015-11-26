@@ -32,8 +32,21 @@ use libc::c_char;
 use script::console;
 use script::reflect::{Reflectable, PrototypeID, finalize, initialize_global};
 use std::ptr;
+use std::env;
+use std::process;
+use js::jsapi::JSFunctionSpec;
+use js::conversions::FromJSValConvertible;
 
 pub struct Global(usize);
+
+impl Global {
+    fn launch_browser(&self, url: String) {
+        let path_to_self = env::var_os("SERVO_PATH").unwrap();
+        let mut child_process = process::Command::new(path_to_self);
+        child_process.arg(url);
+        let _ = child_process.spawn().unwrap();
+    }
+}
 
 static CLASS: JSClass = JSClass {
     name: b"Global\0" as *const u8 as *const c_char,
@@ -88,6 +101,23 @@ const ATTRIBUTES: &'static [JSPropertySpec] = &[
     }
 ];
 
+const METHODS: &'static [JSFunctionSpec] = &[
+    JSFunctionSpec {
+        name: b"launchBrowser\0" as *const u8 as *const c_char,
+        call: JSNativeWrapper {op: Some(launch_browser_native), info: 0 as *const _},
+        nargs: 1,
+        flags: JSPROP_ENUMERATE as u16,
+        selfHostedName: 0 as *const c_char
+    },
+    JSFunctionSpec {
+        name: 0 as *const c_char,
+        call: JSNativeWrapper { op: None, info: 0 as *const _ },
+        nargs: 0,
+        flags: 0,
+        selfHostedName: 0 as *const c_char
+    }
+];
+
 impl Reflectable for Global {
     fn class() -> &'static JSClass {
         &CLASS
@@ -99,6 +129,10 @@ impl Reflectable for Global {
 
     fn attributes() -> Option<&'static [JSPropertySpec]> {
         Some(ATTRIBUTES)
+    }
+
+    fn methods() -> Option<&'static [JSFunctionSpec]> {
+        Some(METHODS)
     }
 
     fn prototype_index() -> PrototypeID {
@@ -123,6 +157,17 @@ unsafe extern "C" fn get_console_native(cx: *mut JSContext, argc: u32, vp: *mut 
     get_console(cx, &args).is_ok()
 }
 
+unsafe fn launch_browser(cx: *mut JSContext, args: &CallArgs) -> Result<(), ()> {
+    let global = try!(Global::from_value(cx, args.thisv()));
+    let url = try!(String::from_jsval(cx, args.get(0), ()));
+    (*global).launch_browser(url);
+    Ok(())
+}
+
+unsafe extern "C" fn launch_browser_native(cx: *mut JSContext, argc: u32, vp: *mut Value) -> bool {
+    let args = CallArgs::from_vp(vp, argc);
+    launch_browser(cx, &args).is_ok()
+}
 
 /// Create a DOM global object with the given class.
 pub fn create_dom_global(cx: *mut JSContext,
