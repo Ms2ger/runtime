@@ -7,9 +7,9 @@
 #![feature(plugin_registrar)]
 #![feature(rustc_private)]
 
-#![plugin(clippy)]
+//#![plugin(clippy)]
 
-extern crate clippy;
+//extern crate clippy;
 extern crate env_logger;
 extern crate js;
 extern crate libc;
@@ -19,16 +19,16 @@ mod error;
 mod script;
 
 use error::Error;
-use rustc::plugin::Registry;
+//use rustc::plugin::Registry;
 use std::env;
 use std::ffi::OsString;
 use std::path::Path;
 use std::process;
 
-#[plugin_registrar]
-pub fn plugin_registrar(registry: &mut Registry) {
-    clippy::plugin_registrar(registry);
-}
+//#[plugin_registrar]
+//pub fn plugin_registrar(registry: &mut Registry) {
+//    clippy::plugin_registrar(registry);
+//}
 
 fn do_main(path: Option<OsString>) -> Result<(), Error> {
     let path = try!(path.ok_or(Error::MissingArgument));

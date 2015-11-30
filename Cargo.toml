@@ -4,9 +4,6 @@ version = "0.1.0"
 authors = ["Ms2ger <Ms2ger@gmail.com>"]
 license = "MPL-2.0"
 
-[dependencies.clippy]
-git = "https://github.com/Manishearth/rust-clippy"
-
 [dependencies.js]
 git = "https://github.com/servo/rust-mozjs"
 features = ["debugmozjs"]
