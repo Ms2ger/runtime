@@ -13,13 +13,13 @@ extern crate clippy;
 extern crate env_logger;
 extern crate js;
 extern crate libc;
-extern crate rustc;
+extern crate rustc_plugin;
 
 mod error;
 mod script;
 
 use error::Error;
-use rustc::plugin::Registry;
+use rustc_plugin::Registry;
 use std::env;
 use std::ffi::OsString;
 use std::path::Path;
