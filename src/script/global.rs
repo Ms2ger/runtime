@@ -41,7 +41,7 @@ pub struct Global(usize);
 
 impl Global {
     fn launch_browser(&self, url: String) {
-        let path_to_self = env::var_os("SERVO_PATH").unwrap();
+        let path_to_self = env::var_os("SERVO_PATH").expect("Please set SERVO_PATH");
         let mut child_process = process::Command::new(path_to_self);
         child_process.arg(url);
         let _ = child_process.spawn().unwrap();
